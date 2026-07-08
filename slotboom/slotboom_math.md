@@ -1,0 +1,388 @@
+# Slotboom-Variable NPN BJT — Strong Form, Weak Form, Mixed Formulation
+
+Working math reference for the high-fidelity FEM build of `slotboom.ipynb`. This document is the
+live source of truth for the model while the notebook itself stays untouched during the design
+phase. Companion artifact: `slotboom_bc_diagram.png` / `slotboom_bc_diagram.py` (full visual +
+numeric detail on boundary conditions — this document only summarizes them, see §4.1).
+
+---
+
+## 1. Device and scope
+
+Confirmed **NPN silicon BJT**: `doping_profile` adds donor terms for the emitter and collector and
+subtracts an acceptor term for the base (n⁺ emitter / p base / n collector), matching Slotboom's own
+1973 worked example. Applied bias V_B = 0.65 V > V_E = 0 V confirms forward-biased B-E (active-mode
+injection direction for an NPN).
+
+Reference: J. W. Slotboom, "Computer-Aided Two-Dimensional Analysis of Bipolar Transistors," *IEEE
+Trans. Electron Devices*, ED-20(8), 1973 (`device_physics_papers/slotboom.pdf`).
+
+Goal: a high-fidelity 2D mixed-FEM solve of the steady-state drift-diffusion equations in Slotboom
+variables, on a mesh graded to the local Debye length at the junctions (design pending, tracked
+separately) — groundwork for a future DDEC/Whitney-forms surrogate, paralleling the elasticity
+project in `locking_demo.ipynb`.
+
+---
+
+## 2. Physical equations (dimensional)
+
+$$
+\nabla\cdot(\varepsilon\nabla\psi_{phys}) = -q(p-n+N), \qquad N := N_D^+ - N_A^-
+$$
+
+$$
+J_p = -q\mu_p p\,\nabla\psi_{phys} - qD_p\nabla p, \qquad
+J_n = -q\mu_n n\,\nabla\psi_{phys} + qD_n\nabla n
+$$
+
+$$
+\nabla\cdot J_p = -qR, \qquad \nabla\cdot J_n = qR
+$$
+
+$D_{n,p}=\mu_{n,p}V_t$ (Einstein relation). $R$ is the SRH net recombination rate.
+
+---
+
+## 3. Normalization
+
+Three free reference scales must be chosen; everything else follows. Convention used throughout
+(matches Slotboom / de Mari):
+
+| Scale | Definition | Value (this device) |
+|---|---|---|
+| $V_t$ | $k_BT/q$ | 25.8614 mV |
+| $C_s$ | $n_i$ (reference concentration) | $1.5\times10^{16}\ \mathrm{m^{-3}}$ |
+| $L_s$ | $L_D=\sqrt{\varepsilon V_t/(qC_s)}$ | 33.3897 μm |
+| $D_s$ | $D_n=\mu_nV_t$ (reference diffusivity — chosen as electron's) | $3.6206\times10^{-3}\ \mathrm{m^2/s}$ |
+| $\tau_s$ | $L_s^2/D_s$ | $3.0794\times10^{-7}$ s |
+
+Resulting dimensionless domain: $\hat L_x = L_x/L_s = 0.1497$, $\hat L_y=L_y/L_s=0.2995$.
+
+| Symbol | Definition | Meaning |
+|---|---|---|
+| $\hat x$ | $x/L_s$ | normalized space |
+| $\psi$ | $\psi_{phys}/V_t$ | normalized electrostatic potential |
+| $\hat n,\hat p$ | $n/n_i,\ p/n_i$ | normalized electron, hole density |
+| $\hat N$ | $N/n_i$ | normalized net doping |
+| $\varphi_n,\varphi_p$ | quasi-Fermi potentials $/V_t$ | $\hat n=e^{\psi-\varphi_n}$, $\hat p=e^{\varphi_p-\psi}$ |
+| $\Phi_p$ | $\exp(\varphi_p)$ | **Slotboom variable**, holes |
+| $\Phi_n$ | $\exp(-\varphi_n)$ | **Slotboom variable**, electrons |
+| $\gamma_p,\gamma_n$ | $D_s/D_p,\ D_s/D_n$ | normalized inverse diffusivity ($\gamma_n\equiv1$ by choice of $D_s$; $\gamma_p=\mu_n/\mu_p\approx3.111$) |
+| $\hat\tau_{n0},\hat\tau_{p0}$ | $\tau_{n0,p0}/\tau_s$ | normalized SRH lifetimes ($\approx0.1624$ each, since $\tau_{n0}=\tau_{p0}=0.5\times10^{-7}$s here) |
+| $\hat R$ | $R\,L_s^2/(D_sn_i)$ | normalized SRH recombination |
+
+Key identity (substituting the quasi-Fermi definitions into the Slotboom transform):
+
+$$
+\hat n = \Phi_n e^{\psi}, \qquad \hat p = \Phi_p e^{-\psi}
+$$
+
+**Normalization consistency note (correction needed vs. current notebook):** both $\hat\tau_{n0}$ and
+$\hat\tau_{p0}$ must be built from the *same* reference $D_s$ (shown by direct non-dimensionalization
+of $R$ in §3 — derivation available on request), not each carrier's own diffusivity. The current
+notebook (`tau_n_norm`, `tau_p_norm` in the continuity-matrix cells) normalizes each by its own
+carrier's $D$, giving inconsistent $\hat\tau_{n0}\approx5.4\times10^6$ vs. $\hat\tau_{p0}\approx1.7\times10^6$
+where they should both be $\approx0.1624$. Likewise `gamma_p = gamma_n = 1.0` is a placeholder that
+needs to become $\gamma_n=1,\ \gamma_p=\mu_n/\mu_p\approx3.111$. Both are implementation fixes, noted
+here so they aren't lost before we get to code.
+
+---
+
+## 4. Strong-form BVP
+
+Unknowns $\psi,\Phi_n,\Phi_p:\Omega\to\mathbb R$, $\Omega=(0,\hat L_x)\times(0,\hat L_y)$:
+
+**(P) Poisson:**
+$$\nabla^2\psi = \Phi_n e^{\psi} - \Phi_p e^{-\psi} - \hat N$$
+
+**(C$_p$) Hole continuity:**
+$$\nabla\cdot\!\big(\gamma_p^{-1}e^{-\psi}\nabla\Phi_p\big) = \hat R$$
+
+**(C$_n$) Electron continuity:**
+$$\nabla\cdot\!\big(\gamma_n^{-1}e^{\psi}\nabla\Phi_n\big) = \hat R$$
+
+$$
+\hat R = \frac{\hat n\hat p - 1}{\hat\tau_{n0}(\hat p+1)+\hat\tau_{p0}(\hat n+1)}, \qquad
+\hat n=\Phi_ne^{\psi},\ \ \hat p=\Phi_pe^{-\psi}
+$$
+
+**Note on the doping source term:** $\hat N(\hat x,\hat y)$ is fixed, known data (the Gaussian-bump
+model already in `doping_profile`), not a solved field — it is *not* generated by a separate
+diffusion-equation FEM solve. The fabrication-process dopant diffusion the Slotboom paper references
+is a decoupled, optional modeling upgrade for generating more realistic $\hat N$ later; it plays no
+role in this BVP.
+
+**Structural note (sets up §5–6):** (P) is nonlinear elliptic in $\psi$; Newton-linearized it becomes
+a screened-Poisson problem with a strictly positive zero-order term ($a^2=\hat n+\hat p>0$) — clean
+Lax-Milgram coercivity. (C$_p$), (C$_n$) are each linear, self-adjoint, elliptic in $\Phi_p$ (resp.
+$\Phi_n$) once $\psi$ is frozen at the previous Gummel outer-iterate — coefficient
+$\gamma^{-1}e^{\mp\psi}>0$ everywhere. This is the entire reason to solve in $\Phi_n,\Phi_p$ rather
+than raw $n,p$ or $\varphi_n,\varphi_p$.
+
+### 4.1 Boundary conditions (summary — full detail in `slotboom_bc_diagram.png`)
+
+$\partial\Omega = \Gamma_E\cup\Gamma_B\cup\Gamma_C\cup\Gamma_N$ (emitter / base / collector ohmic
+contacts, and the remaining insulating/symmetry boundary).
+
+| Segment | Type | $\psi$ | $\Phi_p$ | $\Phi_n$ |
+|---|---|---|---|---|
+| $\Gamma_E,\Gamma_B,\Gamma_C$ | Dirichlet | $\psi_k=\varphi_k+\mathrm{asinh}(\hat N_k/2)$ | $e^{\varphi_k}$ | $e^{-\varphi_k}$ |
+| $\Gamma_N$ | Neumann (homogeneous) | $\partial\psi/\partial\nu=0$ | $\partial\Phi_p/\partial\nu=0$ | $\partial\Phi_n/\partial\nu=0$ |
+
+with $\varphi_k:=V_k/V_t$ the applied bias and $\hat N_k$ the local normalized doping at the contact.
+For the Newton correction $\delta$ to $\psi$: homogeneous Dirichlet ($\delta=0$) on $\Gamma_D:=\Gamma_E\cup\Gamma_B\cup\Gamma_C$, homogeneous Neumann on $\Gamma_N$.
+
+---
+
+## 5. Primal weak formulation
+
+**Poisson (Newton step).** Strong form $-\nabla^2\delta+a^2\delta=-b$, $a^2=\hat n+\hat p$ (at
+current iterate $\psi_0$), $b=-\nabla^2\psi_0+\hat n-\hat p-\hat N$. Find $\delta\in V_D:=\{v\in
+H^1(\Omega):v=0\text{ on }\Gamma_D\}$ such that $\forall v\in V_D$:
+
+$$
+\int_\Omega\nabla\delta\cdot\nabla v\,dx + \int_\Omega a^2\delta v\,dx = -\int_\Omega bv\,dx
+$$
+
+Boundary terms vanish exactly (test function zero on $\Gamma_D$, $\partial\delta/\partial\nu=0$ on
+$\Gamma_N$). The bilinear form $a(\delta,v):=\int\nabla\delta\cdot\nabla v+\int a^2\delta v$ is
+bounded (Cauchy-Schwarz) and **coercive without invoking Poincaré** — $a^2>0$ pointwise gives
+$a(v,v)\ge\min(1,a^2_{\min})\|v\|^2_{H^1}$ directly. Lax-Milgram $\Rightarrow$ existence/uniqueness of
+$\delta$ on every Newton step, unconditionally.
+
+**Continuity equations (primal).** Find $\Phi_p\in H^1(\Omega)$, $\Phi_p=\Phi_p^{bc}$ on $\Gamma_D$,
+such that $\forall q\in V_D$:
+
+$$
+\int_\Omega \gamma_p^{-1}e^{-\psi}\nabla\Phi_p\cdot\nabla q\,dx = -\int_\Omega \hat R\,q\,dx
+$$
+
+(electron equation identical with $\gamma_n$, $e^{+\psi}$, same $\hat R$, frozen at the previous
+Gummel iterate). Coefficient $\gamma^{-1}e^{\mp\psi}$ bounded above/below once $\psi$ is bounded
+$\Rightarrow$ textbook Lax-Milgram (coercivity via Poincaré + coefficient lower bound, boundedness via
+the upper bound).
+
+---
+
+## 6. Mixed (dual) formulation of the continuity equations
+
+### 6.1 Motivation
+
+Plain primal Galerkin on $\Phi_p,\Phi_n$ (§5) gives no guarantee of *local* (element-wise) current
+conservation. Slotboom's own box-method has this property by construction (his Appendix A is exactly
+a finite-volume statement), and it's the reason device terminal currents $I_C,I_B,I_E$ come out
+accurate even on a coarse mesh. The dual mixed FEM recovers the same property for an unstructured
+triangular mesh: introduce the current density itself as an independent unknown in $H(\mathrm{div};\Omega)$, and
+recover exact per-triangle conservation when the conservation law is tested against piecewise-constants.
+
+Poisson stays **primal** (§5) — there is no analogous local-conservation requirement driving it, and
+mixing it would double the saddle-point bookkeeping for no benefit here.
+
+### 6.2 First-order rewrite
+
+Recall (derived earlier from the current-density definitions and the Slotboom substitution):
+$$
+J_p = -\gamma_p^{-1}e^{-\psi}\nabla\Phi_p, \qquad \nabla\cdot J_p = -\hat R
+$$
+$$
+J_n = +\gamma_n^{-1}e^{\psi}\nabla\Phi_n, \qquad \nabla\cdot J_n = +\hat R
+$$
+
+Treat $(J_p,\Phi_p)$ and $(J_n,\Phi_n)$ as independent unknown pairs. Invert each constitutive law:
+
+$$
+\gamma_p e^{\psi}J_p = -\nabla\Phi_p \qquad\qquad \gamma_n e^{-\psi}J_n = +\nabla\Phi_n
+$$
+
+### 6.3 Mixed weak form — holes
+
+Test the constitutive law against $v\in H(\mathrm{div};\Omega)$ and integrate by parts (moving the
+derivative off $\Phi_p$ onto $v$ via $\int\nabla\Phi\cdot v = -\int\Phi(\nabla\cdot v)+\oint_{\partial\Omega}\Phi(v\cdot\nu)$):
+
+$$
+\int_\Omega \gamma_p e^{\psi}J_p\cdot v\,dx - \int_\Omega \Phi_p(\nabla\cdot v)\,dx = -\oint_{\partial\Omega}\Phi_p(v\cdot\nu)\,ds
+$$
+
+This is the key mixed-method move: $\Phi_p$'s **Dirichlet data becomes a natural (boundary-integral)
+term** rather than an essential space constraint. Choose the trial/test space to carry the *Neumann*
+condition essentially instead:
+$$
+W := \{v\in H(\mathrm{div};\Omega) : v\cdot\nu = 0 \text{ on } \Gamma_N\}
+$$
+so the boundary integral collapses to the known Dirichlet data on $\Gamma_D$ only:
+$\oint_{\partial\Omega}\Phi_p(v\cdot\nu)\,ds = \int_{\Gamma_D}\Phi_p^{bc}(v\cdot\nu)\,ds$.
+
+Test the conservation law against $q\in Q:=L^2(\Omega)$:
+$$
+\int_\Omega q\,(\nabla\cdot J_p)\,dx = -\int_\Omega \hat R\,q\,dx
+$$
+
+**Mixed weak form (holes).** Find $(J_p,\Phi_p)\in W\times Q$ such that $\forall(v,q)\in W\times Q$:
+
+$$
+\int_\Omega \gamma_p e^{\psi}\,J_p\cdot v\,dx \;-\; \int_\Omega \Phi_p(\nabla\cdot v)\,dx \;=\; -\int_{\Gamma_D}\Phi_p^{bc}(v\cdot\nu)\,ds
+$$
+$$
+\int_\Omega q\,(\nabla\cdot J_p)\,dx \;=\; -\int_\Omega \hat R\,q\,dx
+$$
+
+### 6.4 Mixed weak form — electrons (by the same steps, opposite signs throughout)
+
+Find $(J_n,\Phi_n)\in W\times Q$ such that $\forall(v,q)\in W\times Q$:
+
+$$
+\int_\Omega \gamma_n e^{-\psi}\,J_n\cdot v\,dx \;+\; \int_\Omega \Phi_n(\nabla\cdot v)\,dx \;=\; \int_{\Gamma_D}\Phi_n^{bc}(v\cdot\nu)\,ds
+$$
+$$
+\int_\Omega q\,(\nabla\cdot J_n)\,dx \;=\; \int_\Omega \hat R\,q\,dx
+$$
+
+The sign flip on the $\Phi(\nabla\cdot v)$ term and on the RHS is not a typo — it's the same
+hole/electron asymmetry already present in $\nabla\cdot J_p=-\hat R$ vs. $\nabla\cdot J_n=+\hat R$ and
+in $J_p$ vs. $J_n$'s constitutive sign, traceable back to the physical eq. (6).
+
+### 6.5 Saddle-point block structure
+
+Both systems share the canonical Brezzi template — for holes, with
+$a(J,v):=\int\gamma_pe^{\psi}J\cdot v\,dx$ and $b(v,\Phi):=-\int\Phi(\nabla\cdot v)\,dx$:
+
+$$
+a(J_p,v) + b(v,\Phi_p) = F(v) \quad\forall v\in W, \qquad\qquad b(J_p,q) = G(q)\quad\forall q\in Q
+$$
+
+with $F(v):=-\int_{\Gamma_D}\Phi_p^{bc}(v\cdot\nu)\,ds$ (boundary data) and $G(q):=-\int\hat R\,q\,dx$
+(recombination data, frozen at the previous Gummel iterate, same role as in §5). $a(\cdot,\cdot)$ is a
+**weighted $L^2$ inner product** ($\gamma_pe^{\psi}>0$ bounded), hence trivially coercive on the
+*whole* space $W$ — stronger than Brezzi's theorem requires (only coercivity on $\ker B$ is needed).
+The one nontrivial condition left to check is the discrete **inf-sup (LBB)**:
+$$
+\inf_{q_h\in Q_h}\ \sup_{v_h\in W_h}\ \frac{b(v_h,q_h)}{\|v_h\|_{H(\mathrm{div})}\|q_h\|_{L^2}} \;\ge\;\beta>0,
+\qquad \beta\text{ independent of mesh size }h
+$$
+
+### 6.6 Element choice
+
+Lowest-order Raviart-Thomas / piecewise-constant pair, $W_h=RT_0(\mathcal T_h)\cap W$, $Q_h=P_0(\mathcal T_h)$ —
+the classical stable pairing for mixed Poisson/Darcy-type problems (Brezzi–Fortin); one scalar
+(normal-flux) DOF per mesh edge, one scalar per triangle. Two points worth flagging:
+
+- Testing the conservation equation with $q_h=\mathbb 1_K$ (indicator of one triangle) recovers
+  $\int_K\nabla\cdot J_p\,dx=-\int_K\hat R\,dx$ **exactly**, element by element — this is the payoff:
+  it reproduces Slotboom's box-method conservation property on an unstructured, graded mesh.
+- $RT_0$ edge DOFs are the $H(\mathrm{div})$ ("rotated Whitney 1-form") counterpart of the
+  $H(\mathrm{curl})$ Nédélec edge elements already built as `ddec_M_Ned` in the elasticity project —
+  same edge-indexing/sign-convention machinery should be directly reusable.
+
+Formal verification that $RT_0$–$P_0$ satisfies the discrete inf-sup condition follows in §6.7.
+
+### 6.7 Discrete inf-sup verification ($RT_0$–$P_0$)
+
+Brezzi's theorem needs three things, with constants independent of $h$: (i) boundedness of
+$a(\cdot,\cdot)$ and $b(\cdot,\cdot)$, (ii) coercivity of $a(\cdot,\cdot)$ on $\ker B_h$, (iii) the
+discrete inf-sup condition. Worked through for holes ($W_h=RT_0(\mathcal T_h)\cap W$,
+$Q_h=P_0(\mathcal T_h)$); electrons are identical up to an overall sign that no norm sees.
+
+**(i) Boundedness.**
+$$
+|a(J,v)| = \Big|\int_\Omega \gamma_pe^{\psi}J\cdot v\,dx\Big| \le M\|J\|_{H(\mathrm{div})}\|v\|_{H(\mathrm{div})},
+\qquad M := \operatorname*{ess\,sup}_\Omega \gamma_pe^{\psi}
+$$
+finite as long as $\psi\in L^\infty(\Omega)$ — but $M$ carries the full dynamic range flagged earlier
+(could be $\sim10^{13}$). By contrast
+$$
+|b(v,q)| = \Big|\int_\Omega q\,(\nabla\cdot v)\,dx\Big| \le \|q\|_{L^2}\|v\|_{H(\mathrm{div})}
+$$
+with constant exactly $1$ — $b$ has **no dependence on $\psi,\gamma$ at all**; it is a purely
+geometric pairing between $RT_0$ and $P_0$. This is the central fact this section turns on.
+
+**(ii) Coercivity on $\ker B_h$.** $RT_0$ functions have *exactly* piecewise-constant divergence, so
+$b(v_h,q_h)=0\ \forall q_h\in Q_h \iff \nabla\cdot v_h\equiv0$ on every triangle $\iff \nabla\cdot v_h=0$
+in $\Omega$. Hence $\ker B_h=\{v_h\in W_h:\nabla\cdot v_h=0\}$, on which $\|v_h\|^2_{H(\mathrm{div})}=\|v_h\|^2_{L^2}$
+exactly (divergence term vanishes). Then
+$$
+a(v_h,v_h) = \int_\Omega \gamma_pe^{\psi}|v_h|^2\,dx \ \ge\ c_0\|v_h\|^2_{L^2} = c_0\|v_h\|^2_{H(\mathrm{div})},
+\qquad c_0:=\operatorname*{ess\,inf}_\Omega \gamma_pe^{\psi} > 0
+$$
+— coercivity on the kernel, with the same $\psi$-dependent constant, just the lower bound this time.
+
+**(iii) Discrete inf-sup — the substantive check.** *Continuous version first*, reusing §5 directly.
+Given $q\in L^2(\Omega)$, solve the auxiliary mixed Dirichlet–Neumann Poisson problem — exactly the
+$\S5$ Lax–Milgram problem with $a^2\to0$ and RHS $q$:
+$$
+\int_\Omega\nabla\phi\cdot\nabla w\,dx = \int_\Omega qw\,dx \quad\forall w\in H^1_{\Gamma_D}(\Omega),
+\qquad \phi\in H^1_{\Gamma_D}(\Omega)
+$$
+Set $v:=-\nabla\phi$. Then $\nabla\cdot v=-\Delta\phi=q$ and $v\cdot\nu=-\partial\phi/\partial\nu=0$ on
+$\Gamma_N$, so $v\in W$. Poincaré ($\Gamma_D\ne\emptyset$) gives $\|\nabla\phi\|_{L^2}\le C_P\|q\|_{L^2}$,
+hence $\|v\|_{H(\mathrm{div})}\le\sqrt{C_P^2+1}\,\|q\|_{L^2}$, while $|b(v,q)|=\|q\|^2_{L^2}$ (sign
+immaterial — $W$ is closed under $v\mapsto-v$). So
+$$
+\sup_{v\in W}\frac{|b(v,q)|}{\|v\|_{H(\mathrm{div})}} \ \ge\ \frac{\|q\|_{L^2}}{\sqrt{C_P^2+1}}
+\quad\Longrightarrow\quad \beta_0 := \frac{1}{\sqrt{C_P^2+1}} > 0
+$$
+depending only on $\Omega$'s Poincaré constant — **not** on $\psi,\gamma$.
+
+*Discrete step*: a Fortin operator $\Pi_h:H^1(\Omega)^2\cap W\to W_h$ that (a) preserves the $b$-pairing
+against $Q_h$ exactly and (b) is bounded independent of $h$. For $(RT_0,P_0)$ the canonical choice is
+the $RT_0$ edge interpolant, $(\Pi_hv\cdot\nu_e)|_e:=\frac{1}{|e|}\int_e v\cdot\nu_e\,ds$ (average
+normal flux per edge), which satisfies the **commuting diagram property**
+$\nabla\cdot(\Pi_hv)=P^0_h(\nabla\cdot v)$: on any triangle $K$,
+$$
+\int_K\nabla\cdot(\Pi_hv)\,dx = \oint_{\partial K}\Pi_hv\cdot\nu\,ds = \sum_{e\subset\partial K}\int_ev\cdot\nu\,ds = \oint_{\partial K}v\cdot\nu\,ds = \int_K\nabla\cdot v\,dx
+$$
+(the middle equality is exactly the edge-DOF definition), and since $\nabla\cdot(\Pi_hv)$ is constant
+on $K$ for $RT_0$, this *is* the statement that it equals the cell-average of $\nabla\cdot v$ — exact,
+not approximate. That gives the Fortin property directly: for $q_h\in Q_h$,
+$b(\Pi_hv,q_h)=-\int q_hP^0_h(\nabla\cdot v)=-\int q_h(\nabla\cdot v)=b(v,q_h)$. Combined with the
+standard $RT_0$ interpolation bound $\|\Pi_hv\|_{L^2}\le C\|v\|_{H^1}$ ($C$ depending only on mesh
+**shape-regularity** — minimum angle bounded away from $0$ — not on $h$), setting $v_h:=\Pi_hv$ for the
+same $v=-\nabla\phi$ gives $b(v_h,q)=b(v,q)$ and $\|v_h\|_{H(\mathrm{div})}\le C'\|q\|_{L^2}$
+(via $H^2$-regularity of the auxiliary problem on the convex rectangle — caveat below), hence
+$$
+\inf_{q_h\in Q_h}\ \sup_{v_h\in W_h}\ \frac{b(v_h,q_h)}{\|v_h\|_{H(\mathrm{div})}\|q_h\|_{L^2}} \ \ge\ \beta\ >\ 0,
+\qquad \beta\text{ independent of }h
+$$
+— the classical $(RT_0,P_0)$ stability result (Brezzi–Fortin, *Mixed and Hybrid FEM*, the canonical
+worked example for mixed Poisson/Darcy). $\beta$ depends on $\Omega$'s Poincaré constant and the
+mesh's shape-regularity — **not** on $h$, and **not** on $\gamma,\psi$: well-posedness of the mixed
+method is robust to exactly the coefficient blow-up that threatened conditioning in §3/§4's discussion.
+Electrons: identical argument verbatim ($W,Q,b$ unchanged; only $a$'s coefficient and an overall sign
+differ, neither of which inf-sup sees).
+
+**Caveat (flagged, not resolved here).** The $H^2$-regularity step can degrade right at the four
+points where the boundary-condition type switches ($\hat y$ corresponding to $3,8\ \mu m$ on the top
+surface, and the corners where $\Gamma_C$ meets $\Gamma_N$) — mixed Dirichlet/Neumann elliptic problems
+generically lose some regularity exactly at such transition points, even on a convex domain. Standard,
+handled in the literature via weaker-norm Fortin operators; doesn't change the conclusion, just means
+the fully rigorous statement is "$\beta$ independent of $h$" rather than a closed-form number.
+
+**Practical upshot.** $(RT_0,P_0)$ is unconditionally the right stable pair here regardless of how
+extreme $\gamma_pe^{\mp\psi}$ gets — no inf-sup risk from the numerics. What the numerics *do* threaten
+is the linear system's **condition number** (roughly $M/c_0$, both $\psi$-dependent) — the conditioning
+concern from §3/§4, mitigated by mesh grading, not by anything in this inf-sup argument. The
+shape-regularity requirement on $C$ above is also a concrete constraint on *how* that grading must be
+done: refinement concentrated at the junction needs to stay well-shaped (no degenerate slivers), not
+just small.
+
+### 6.8 Global solve strategy
+
+Outer Gummel iteration (unchanged in spirit from Slotboom's Fig. 1 / the existing notebook's
+structure), now with two of the three inner solves replaced by saddle-point systems instead of single
+linear solves:
+
+1. Freeze $\Phi_n,\Phi_p$ → Newton-solve primal Poisson (§5) for $\psi$.
+2. Freeze $\psi$ (and $\hat R$) → solve the hole mixed system (§6.3) for $(J_p,\Phi_p)$.
+3. Freeze $\psi$ (and $\hat R$) → solve the electron mixed system (§6.4) for $(J_n,\Phi_n)$.
+4. Update $\hat R$ from the new $\Phi_n,\Phi_p$; repeat until convergence.
+
+---
+
+## 7. Status / next steps
+
+- [x] Strong-form BVP, normalization, all variables defined (§2–4)
+- [x] Boundary conditions per variable per contact (§4.1; full detail in `slotboom_bc_diagram.png`)
+- [x] Primal weak formulation + Lax-Milgram for Poisson and continuity (§5)
+- [x] Mixed (dual) formulation for both continuity equations (§6)
+- [x] Formal inf-sup / Brezzi check for $RT_0$–$P_0$ (§6.7)
+- [ ] Graded/adaptive mesh design concentrated at the doping junctions (must stay shape-regular — see §6.7 caveat)
+- [ ] Implementation (chat code snippets, notebook stays read-only)

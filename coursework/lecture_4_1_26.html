@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture Notes — Saddle Point Problems & de Rham Complex</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$']],
+      displayMath: [['$$', '$$']],
+      tags: 'ams'
+    },
+    options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  :root {
+    --bg: #faf8f3;
+    --paper: #fffefb;
+    --ink: #1a1510;
+    --muted: #6b5e4e;
+    --accent: #8b2e00;
+    --accent2: #1a4a6b;
+    --rule: #d4c9b8;
+    --highlight: #fff3e0;
+    --tag-bg: #e8f0f8;
+    --tag-fg: #1a4a6b;
+    --def-bg: #fef3ec;
+    --def-border: #c0672a;
+    --thm-bg: #eef5f0;
+    --thm-border: #2e7a4a;
+    --note-bg: #f5f0fa;
+    --note-border: #7a4a9a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.85;
+  }
+
+  /* Page header */
+  .page-header {
+    background: var(--ink);
+    color: #faf8f3;
+    padding: 2.5rem 3rem 2rem;
+    border-bottom: 4px solid var(--accent);
+  }
+  .page-header .course {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #b8a898;
+    margin-bottom: 0.5rem;
+  }
+  .page-header h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+  .page-header .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: #b8a898;
+    letter-spacing: 0.05em;
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent2);
+    margin: 2rem auto;
+    max-width: 860px;
+    padding: 1.4rem 1.8rem;
+    border-radius: 2px;
+  }
+  .toc h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 0.8rem;
+  }
+  .toc ol {
+    padding-left: 1.4rem;
+  }
+  .toc li {
+    margin-bottom: 0.25rem;
+    font-size: 0.93rem;
+  }
+  .toc a {
+    color: var(--accent2);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent2);
+  }
+  .toc a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Main content */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 1rem 2rem 4rem;
+  }
+
+  /* Sections */
+  section {
+    margin-bottom: 3.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.4rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--rule);
+  }
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.55rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--ink);
+  }
+
+  /* Math display blocks */
+  .math-block {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent2);
+    padding: 1.1rem 1.6rem;
+    margin: 1.2rem 0;
+    overflow-x: auto;
+    border-radius: 1px;
+  }
+
+  /* Definition box */
+  .def {
+    background: var(--def-bg);
+    border: 1px solid var(--def-border);
+    border-left: 4px solid var(--def-border);
+    padding: 1.1rem 1.5rem;
+    margin: 1.3rem 0;
+    border-radius: 2px;
+  }
+  .def .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--def-border);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  /* Theorem box */
+  .thm {
+    background: var(--thm-bg);
+    border: 1px solid var(--thm-border);
+    border-left: 4px solid var(--thm-border);
+    padding: 1.1rem 1.5rem;
+    margin: 1.3rem 0;
+    border-radius: 2px;
+  }
+  .thm .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--thm-border);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  /* Note / Remark */
+  .note {
+    background: var(--note-bg);
+    border: 1px solid var(--note-border);
+    border-left: 4px solid var(--note-border);
+    padding: 1.1rem 1.5rem;
+    margin: 1.3rem 0;
+    border-radius: 2px;
+  }
+  .note .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--note-border);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  /* Proof */
+  .proof {
+    border-left: 3px solid var(--rule);
+    padding: 0.7rem 1.3rem;
+    margin: 1rem 0;
+    color: #3a3028;
+  }
+  .proof .label {
+    font-style: italic;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+  .proof-end::after {
+    content: '∎';
+    float: right;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  /* Steps list */
+  .steps {
+    list-style: none;
+    padding-left: 0;
+    counter-reset: step-counter;
+  }
+  .steps li {
+    counter-increment: step-counter;
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+    align-items: baseline;
+  }
+  .steps li::before {
+    content: counter(step-counter);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: var(--highlight);
+    border: 1px solid var(--def-border);
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  /* Bullet list */
+  .bullets {
+    list-style: none;
+    padding-left: 0;
+  }
+  .bullets li {
+    padding-left: 1.5rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+  }
+  .bullets li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  /* Key result highlight */
+  .key-result {
+    background: var(--ink);
+    color: #faf8f3;
+    padding: 0.8rem 1.4rem;
+    display: inline-block;
+    border-radius: 1px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+  }
+
+  /* Matrix display */
+  .matrix-system {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 1.2rem 2rem;
+    margin: 1rem 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+
+  /* Separator */
+  .sep {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 2.5rem 0;
+  }
+
+  /* Chain complex diagram */
+  .chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+    font-size: 1.05rem;
+  }
+  .chain-space {
+    background: var(--tag-bg);
+    color: var(--tag-fg);
+    padding: 0.3rem 0.9rem;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92rem;
+    border: 1px solid #b0c8e0;
+  }
+  .chain-arrow {
+    color: var(--accent2);
+    font-size: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    line-height: 1;
+  }
+  .chain-arrow span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  /* Tag pill */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.6rem;
+    border-radius: 2px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    border: 1px solid #b0c8e0;
+  }
+
+  /* Sidebar note */
+  .aside {
+    float: right;
+    width: 210px;
+    margin: 0 0 1rem 1.5rem;
+    background: var(--highlight);
+    border: 1px solid #e0c898;
+    border-radius: 2px;
+    padding: 0.8rem 1rem;
+    font-size: 0.82rem;
+    color: #5a4520;
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .aside .aside-label {
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #8b6020;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  @media (max-width: 600px) {
+    .aside { float: none; width: 100%; margin: 1rem 0; }
+    main { padding: 1rem 1rem 3rem; }
+    .page-header { padding: 1.5rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="course">FEM / Numerical PDEs — Lecture Notes</div>
+  <h1>Saddle Point Problems &amp; the de Rham Complex</h1>
+  <div class="meta">April 1, 2026 &nbsp;·&nbsp; Replacement Lecture</div>
+</header>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Review: Stokes Flow as a Saddle Point Problem</a></li>
+    <li><a href="#s2">Abstract Saddle Point Framework</a></li>
+    <li><a href="#s3">The Inf-Sup (LBB) Condition</a></li>
+    <li><a href="#s4">Concrete 1D Example</a></li>
+    <li><a href="#s5">Vector Calculus &amp; Conservation Laws</a></li>
+    <li><a href="#s6">The de Rham Complex &amp; FEM Spaces</a></li>
+    <li><a href="#s7">Whitney Form Construction</a></li>
+    <li><a href="#s8">Hackathon / Homework</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s1">
+  <div class="section-header">
+    <span class="section-number">§1</span>
+    <h2>Review: Stokes Flow as a Saddle Point Problem</h2>
+  </div>
+
+  <p>Last time we discussed <strong>locking</strong> and showed that <strong>Stokes flow</strong> is a special limit of incompressible elasticity.</p>
+
+  <div class="math-block">
+    $$\nabla^2 u - \nabla p = f \qquad \text{(Lagrange multiplier)}$$
+    $$\nabla \cdot u = 0 \qquad \text{(incompressibility constraint)}$$
+  </div>
+
+  <p>This is an example of an abstract <strong>saddle point problem</strong>.</p>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s2">
+  <div class="section-header">
+    <span class="section-number">§2</span>
+    <h2>Abstract Saddle Point Framework</h2>
+  </div>
+
+  <p>The abstract form of the problem is: find $u \in V$, $p \in M$ such that</p>
+
+  <div class="math-block">
+    <strong>(★)</strong>
+    $$a(u, v) + b(p, v) = L_1(v) \qquad \forall\, v \in V$$
+    $$b(\xi, u) \phantom{+ b(p, v)} = L_2(\xi) \qquad \forall\, \xi \in M$$
+  </div>
+
+  <div class="note">
+    <span class="label">Remark — Matrix Form</span>
+    This corresponds to the block linear system
+    $$\begin{pmatrix} A & B \\ B^T & 0 \end{pmatrix} \begin{pmatrix} \hat{u} \\ \hat{p} \end{pmatrix} = \begin{pmatrix} b_1 \\ b_2 \end{pmatrix}$$
+    where $A$ comes from the bilinear form $a(\cdot,\cdot)$ and $B$ from $b(\cdot,\cdot)$.
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s3">
+  <div class="section-header">
+    <span class="section-number">§3</span>
+    <h2>The Inf-Sup (LBB) Condition</h2>
+  </div>
+
+  <div class="thm">
+    <span class="label">Theorem</span>
+    Assume $a(\cdot,\cdot)$ satisfies <strong>Lax-Milgram</strong>. Then <strong>(★)</strong> has a unique solution if $V$ and $M$ satisfy an <strong>inf-sup</strong> (aka LBB) condition.
+  </div>
+
+  <div class="def">
+    <span class="label">Definition — Inf-Sup (LBB) Condition</span>
+    $V$ and $M$ satisfy the inf-sup condition (are <em>inf-sup compatible</em>) if
+    $$\forall\, p \in M, \quad \exists\, \tilde{v} \in V \text{ nonzero s.t.}$$
+    $$\frac{b(p, \tilde{v})}{\|\tilde{v}\|_V} \geq \beta \|p\|_M$$
+    for some constant $\beta > 0$.
+  </div>
+
+  <div class="proof">
+    <span class="label">Proof sketch</span>
+    <ul class="bullets">
+      <li>Recall: $Ax = b$ has a solution; if $b = 0 \Rightarrow x = 0$.</li>
+      <li>Take $L_1 = L_2 = 0$, $\xi = p$, $v = u$. Then
+        $$a(u,u) + b(p,u) = 0, \quad b(p,u) = 0 \;\Rightarrow\; a(u,u) = 0.$$</li>
+      <li><strong>Coercivity:</strong> $0 = a(u,u) \geq \alpha\|u\|_V^2 \;\Rightarrow\; u = 0$.</li>
+      <li>By inf-sup, $\exists\, \tilde{v} \in V$. Take $v = \tilde{v}$:
+        $b(p, \tilde{v}) = 0$, so
+        $$0 = \frac{b(p,\tilde{v})}{\|\tilde{v}\|_V} \geq \beta\|p\|_M \;\Rightarrow\; p = 0.$$</li>
+    </ul>
+    <div class="proof-end"></div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s4">
+  <div class="section-header">
+    <span class="section-number">§4</span>
+    <h2>Concrete 1D Example ($\Omega = [0,1]$)</h2>
+  </div>
+
+  <p>Consider $-u'' = f$. We rewrite as a first-order system by setting $F = u'$:</p>
+  <div class="math-block">
+    $$F = u' \qquad -F' = f$$
+  </div>
+
+  <p>Pick $F \in V$, $u \in M$. For all $v \in V$, $\xi \in M$:</p>
+  <div class="math-block">
+    $$(F, v) - (u', v) = 0$$
+    $$-(F, \xi) = (f, \xi)$$
+  </div>
+
+  <p>After integration by parts (IBP) on the top equation:</p>
+  <div class="math-block">
+    $$(F, v) + (u, v') = uv\big|_0^1$$
+    $$-(F', \xi) = (f, \xi)$$
+  </div>
+
+  <p>We have a saddle point problem with bilinear forms:</p>
+  <div class="math-block">
+    $$a(F, v) = (F, v), \qquad b(u, v) = (u, v')$$
+  </div>
+
+  <p>Note: $a(\cdot,\cdot)$ satisfies Lax-Milgram (it's just the $L^2$ inner product). Now let's build an <strong>inf-sup compatible space</strong>.</p>
+
+  <div class="thm">
+    <span class="label">Construction</span>
+    Let
+    $$M_h = \{f \in L^2(\Omega) : f|_e = \mathrm{const}\}, \qquad V_h = \text{piecewise linears}$$
+    <strong>Task:</strong> Given any $p \in M_h$, build $\tilde{v} \in V_h$ such that $\tilde{v}' = p$.
+    <em>Hint: Think FTC — build an antiderivative.</em>
+  </div>
+
+  <p>Set $\tilde{v}_0 = 0$ and define $\tilde{v}_j = \sum_{k=0}^{j-1} p_k h$. Then on element $e_j$:</p>
+  <div class="math-block">
+    $$\int_{e_j} \tilde{v}'\, dx = \tilde{v}_{j+1} - \tilde{v}_j = p_j h$$
+  </div>
+  <p>This construction is building an antiderivative — easy in 1D.</p>
+
+  <p>Now compute $b(p, \tilde{v})$:</p>
+  <div class="math-block">
+    $$b(p, \tilde{v}) = \int p\, \tilde{v}'\, dx = \sum_j \hat{p}_j(\tilde{v}_{j+1} - \tilde{v}_j) = \sum_j \hat{p}_j^2 h = \|p\|_{L^2}^2$$
+  </div>
+
+  <p>And the $H^1$ seminorm of $\tilde{v}$:</p>
+  <div class="math-block">
+    $$|\tilde{v}|_{H^1}^2 = \sum_{e_j} \int_{x_j}^{x_{j+1}} (\tilde{v}')^2\, dx = \sum_{e_j} \int_{x_j}^{x_{j+1}} p^2\, dx = \|p\|_{L^2}^2$$
+  </div>
+
+  <p>Therefore:</p>
+  <div class="math-block">
+    $$\frac{b(p, \tilde{v})}{|\tilde{v}|_{H^1}} = \frac{\|p\|_{L^2}^2}{\|p\|_{L^2}^2} = \|p\|_{L^2}$$
+  </div>
+
+  <div class="note">
+    <span class="label">Result</span>
+    Inf-sup holds with $\beta = 1$, using norms $V = H^1$ seminorm, $M = L^2$.
+  </div>
+
+  <hr class="sep">
+
+  <div class="note">
+    <span class="label">Thoughts on Inf-Sup</span>
+    <ul class="bullets">
+      <li>It comes from the FTC and building an antiderivative. Can we do this in higher dimensions?</li>
+      <li>If we pick a bigger space $V_{\mathrm{big}} \supseteq V$, then $V_{\mathrm{big}}$ is also inf-sup compatible. Is $V_{\mathrm{big}}$ big enough to find an antiderivative?</li>
+      <li>Formally, $V$ and $M$ are surjective under differentiation.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s5">
+  <div class="section-header">
+    <span class="section-number">§5</span>
+    <h2>Vector Calculus &amp; Conservation Laws</h2>
+  </div>
+
+  <p>We break to revisit vector calculus. Objective (until next week): steady-state dynamics.</p>
+
+  <div class="math-block">
+    $$Au + \varepsilon N[u] = f$$
+  </div>
+
+  <p>We'd like to pose this in <strong>conservative form</strong>:</p>
+  <div class="math-block">
+    $$\nabla \cdot F = f \qquad \leftarrow \text{exact! conservative}$$
+    $$F = -\nabla u + N[u]$$
+  </div>
+
+  <p>Then any learned model will be conservative if $\nabla \cdot \cdot = 0$:</p>
+  <div class="math-block">
+    $$0 = \int \nabla \cdot F\, dx = \oint F \cdot dA \qquad \text{(what goes in = what comes out)}$$
+  </div>
+
+  <div class="def">
+    <span class="label">Other Flavors of Conservation (Generalized Stokes Theorem)</span>
+    $$\int \nabla \phi \cdot dl = \phi_j - \phi_i$$
+    $$\int \nabla\!\times\!\psi \cdot dA = \int \psi \cdot dl$$
+    $$\int \nabla \cdot F\, dV = \oint F \cdot dA$$
+    <p style="margin-top:0.7rem;">These are all instances of:</p>
+    $$\int_\Sigma dF = \int_{\partial\Sigma} F \qquad \text{(Generalized Stokes Theorem)}$$
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s6">
+  <div class="section-header">
+    <span class="section-number">§6</span>
+    <h2>The de Rham Complex &amp; FEM Spaces</h2>
+  </div>
+
+  <p>Define the differential operators: $d_0 = \nabla$, $d_1 = \nabla\times$, $d_2 = \nabla\cdot$.</p>
+
+  <div class="note">
+    <span class="label">Key Identity</span>
+    $$\nabla\!\times\!\nabla = \nabla\cdot\nabla\!\times = 0 \;\;\Longrightarrow\;\; d_{k+1}\, d_k = 0$$
+  </div>
+
+  <p>We want to build families of FEM spaces that form a <strong>de Rham complex</strong>:</p>
+
+  <div class="chain">
+    <span class="chain-space">$W_0$</span>
+    <span class="chain-arrow">→<span>$d_0 = \nabla$</span></span>
+    <span class="chain-space">$W_1$</span>
+    <span class="chain-arrow">→<span>$d_1 = \nabla\times$</span></span>
+    <span class="chain-space">$W_2$</span>
+    <span class="chain-arrow">→<span>$d_2 = \nabla\cdot$</span></span>
+    <span class="chain-space">$W_3$</span>
+  </div>
+
+  <p>This will let us learn flux / circulation / potential balances.</p>
+
+  <div class="def">
+    <span class="label">Theorem (Saddle Point) — Abstract Form ★★</span>
+    The saddle-point problem is:
+    $$\begin{cases}(F, v) - (d_1 u, v) = 0 \\ (\xi, d^* F) = (f, \xi)\end{cases}$$
+    where $d^*$ is the <strong>adjoint</strong> — what comes out of IBP.
+    <br><br>
+    Example: $(\nabla u, v) = -(u, \nabla \cdot v)$, i.e. $d_0^* = -\nabla\cdot$.
+  </div>
+
+  <div class="key-result">
+    inf-sup stable if $d_k W_k \subseteq W_{k+1}$
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s7">
+  <div class="section-header">
+    <span class="section-number">§7</span>
+    <h2>Whitney Form Construction</h2>
+  </div>
+
+  <p>This construction is also known as the <em>Whitney form construction</em>.</p>
+
+  <p><strong>Pick $W_0$</strong> as our usual tent functions: $u \in W_0 \Rightarrow u = \sum_i \hat{u}_i\, \phi_i(x)$, with $\phi_i^0(x) = \phi_i(x)$.</p>
+
+  <p><strong>Define basis for $W_1$:</strong></p>
+  <div class="math-block">
+    $$\psi_{ij}^1(x) = \phi_i \nabla\phi_j - \phi_j \nabla\phi_i$$
+    $$u \in W_1 \;\Rightarrow\; u = \sum_{i,j} \hat{u}_{ij}\, \psi_{ij}^1(x)$$
+  </div>
+
+  <div class="thm">
+    <span class="label">Claim: $\nabla W_0 \subseteq W_1$</span>
+    <strong>Proof.</strong> Note $\sum_i \phi_i = 1 \Rightarrow \sum_i \nabla\phi_i = 0$. Let $u \in W_0$:
+    $$\nabla u = \sum_i \hat{u}_i \nabla\phi_i = \sum_i \hat{u}_i \left[\nabla\phi_i \left(\sum_j \phi_j\right) - \left(\sum_j \nabla\phi_j\right)\phi_i\right] = \sum_{i,j} \hat{u}_i\, \psi_{ij}^1$$
+    So $\nabla u \in W_1$. $\quad\square$
+  </div>
+
+  <p><strong>Skipping details (for HW):</strong> The basis for $W_2$ is:</p>
+  <div class="math-block">
+    $$\psi_{ijk}^2 = \phi_k \nabla\phi_i \times \nabla\phi_j + \phi_i \nabla\phi_j \times \nabla\phi_k + \phi_j \nabla\phi_k \times \nabla\phi_i$$
+  </div>
+
+  <p>One can show: $u \in W_1 \Rightarrow \nabla\!\times\! u \in W_2$, so the complex property $d_k W_k \subseteq W_{k+1}$ holds throughout.</p>
+</section>
+
+<!-- ─────────────────────────────────────────────── -->
+<section id="s8">
+  <div class="section-header">
+    <span class="section-number">§8</span>
+    <h2>Hackathon / Homework</h2>
+  </div>
+
+  <p>For the next hackathon/HW, consider the system with $u \in W_0$, $F \in W_1$:</p>
+  <div class="math-block">
+    $$\nabla \cdot F = f, \qquad F = -\nabla u + N[u]$$
+  </div>
+
+  <p>The weak form is:</p>
+  <div class="math-block">
+    $$(F, v) + (\nabla u, v) - (N[u], v) = 0$$
+    $$-(F, \nabla\xi) = (f, \xi)$$
+  </div>
+
+  <p>If we let $N[u] = \sum_i \mathcal{N}[\hat{u}]_i\, \phi_i^0$, then:</p>
+  <div class="math-block">
+    $$\begin{pmatrix} M & G \\ G^T & 0 \end{pmatrix} \begin{pmatrix} \hat{F} \\ \hat{u} \end{pmatrix} + \begin{pmatrix} M\,\mathcal{N}[\hat{u}] \\ 0 \end{pmatrix} = \begin{pmatrix} 0 \\ f \end{pmatrix}$$
+  </div>
+
+  <div class="aside">
+    <span class="aside-label">Key takeaway</span>
+    The first block is <strong>inf-sup stable</strong> (solvable, diffusing). The second is the <strong>nonlinearity</strong>.
+  </div>
+
+  <p>Think back to FDM! For a <strong>Lipschitz nonlinearity</strong> $Au + N[u] = b$ is solvable.</p>
+
+  <div class="thm">
+    <span class="label">Summary</span>
+    The inf-sup stable discretization using the Whitney complex $W_0, W_1, W_2, W_3$ guarantees that the discrete saddle point problem is well-posed, and the complex property $d_k W_k \subseteq W_{k+1}$ ensures consistency with the continuous de Rham complex.
+  </div>
+</section>
+
+</main>
+</body>
+</html>

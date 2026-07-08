@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Data-Driven Whitney Forms — Lecture Notes (April 4–6)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FAF6EF;
+    --panel: #FFFFFF;
+    --ink: #2B2622;
+    --ink-soft: #5B534B;
+    --rule: #E4DCCC;
+    --navy: #2C4A5E;
+    --navy-bg: #EFF4F6;
+    --terracotta: #B5602F;
+    --terracotta-bg: #FCF1E9;
+    --olive: #5C6B3F;
+    --olive-bg: #F2F4EA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Source Serif 4", Georgia, serif;
+    font-size:17px;
+    line-height:1.6;
+    padding:0 0 6rem 0;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:3.2rem 1.5rem 0;
+  }
+  header.doc-head{
+    border-bottom:2px solid var(--ink);
+    padding-bottom:1.4rem;
+    margin-bottom:2.6rem;
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono", monospace;
+    font-size:0.74rem;
+    letter-spacing:0.12em;
+    color:var(--terracotta);
+    text-transform:uppercase;
+    font-weight:600;
+  }
+  h1.title{
+    font-size:1.95rem;
+    margin:0.45rem 0 0.3rem;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:1rem;
+    font-style:italic;
+  }
+  .transcriber-note{
+    background:var(--navy-bg);
+    border-left:3px solid var(--navy);
+    padding:0.9rem 1.1rem;
+    font-size:0.92rem;
+    color:var(--ink-soft);
+    margin-top:1.3rem;
+    border-radius:2px;
+  }
+  .transcriber-note b{color:var(--navy);}
+
+  nav.toc{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    padding:1.1rem 1.4rem;
+    margin-bottom:3rem;
+    font-size:0.93rem;
+  }
+  nav.toc .eyebrow{margin-bottom:0.5rem;display:block;}
+  nav.toc ol{margin:0;padding-left:1.3rem;}
+  nav.toc li{margin:0.18rem 0;}
+  nav.toc a{color:var(--ink); text-decoration:none; border-bottom:1px dotted var(--rule);}
+  nav.toc a:hover{color:var(--terracotta); border-color:var(--terracotta);}
+
+  section.block{
+    margin-bottom:3.4rem;
+  }
+  .section-num{
+    font-family:"JetBrains Mono", monospace;
+    color:var(--terracotta);
+    font-size:0.8rem;
+    font-weight:600;
+    letter-spacing:0.06em;
+  }
+  h2{
+    font-size:1.42rem;
+    margin:0.2rem 0 1.1rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:0.6rem;
+  }
+  h3{
+    font-size:1.08rem;
+    margin:1.6rem 0 0.6rem;
+    color:var(--navy);
+  }
+  p{margin:0.85rem 0;}
+
+  .box{
+    border-radius:6px;
+    padding:1.1rem 1.3rem;
+    margin:1.1rem 0;
+    border-left:4px solid;
+  }
+  .box .label{
+    font-family:"JetBrains Mono", monospace;
+    font-size:0.74rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    font-weight:700;
+    display:block;
+    margin-bottom:0.55rem;
+  }
+  .box.def{ background:var(--navy-bg); border-color:var(--navy); }
+  .box.def .label{ color:var(--navy); }
+  .box.thm{ background:var(--terracotta-bg); border-color:var(--terracotta); }
+  .box.thm .label{ color:var(--terracotta); }
+  .box.pf{ background:var(--panel); border-color:var(--rule); border-left-color:#B7AE9C; }
+  .box.pf .label{ color:var(--ink-soft); }
+  .box.remark{ background:var(--olive-bg); border-color:var(--olive); }
+  .box.remark .label{ color:var(--olive); }
+  .box.note{ background:#F6F2E9; border-color:#C9A86A; }
+  .box.note .label{ color:#9C7A33; }
+
+  .eq{ overflow-x:auto; padding:0.4rem 0; }
+  .eq-block{ text-align:center; margin:0.9rem 0; }
+
+  .matrix-wrap{ overflow-x:auto; padding:0.5rem 0; }
+
+  .arrow-pair{
+    display:flex;
+    align-items:center;
+    gap:1.4rem;
+    justify-content:center;
+    margin:1.3rem 0;
+    font-size:1.15rem;
+  }
+  .arrow-pair .stack{ display:flex; flex-direction:column; align-items:center; gap:0.2rem; }
+  .arrow-pair .arrow-label{ font-size:0.78rem; color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
+
+  hr.div{ border:none; border-top:1px solid var(--rule); margin:2.6rem 0; }
+
+  code, .inline-code{
+    font-family:"JetBrains Mono", monospace;
+    font-size:0.88em;
+    background:#F1ECE0;
+    padding:0.1em 0.35em;
+    border-radius:3px;
+  }
+
+  footer.endnote{
+    margin-top:4rem;
+    padding-top:1.4rem;
+    border-top:2px solid var(--ink);
+    font-size:0.88rem;
+    color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <span class="eyebrow">Lecture Notes · April 4–6</span>
+    <h1 class="title">Data-Driven Whitney Forms</h1>
+    <div class="subtitle">From partitions of unity to a conservative, trainable discretization on graphs</div>
+    <div class="transcriber-note">
+      <b>Transcription note.</b> This is a cleaned-up, typeset version of the handwritten pages you uploaded.
+      The definitions, theorem statements, and final results are transcribed faithfully. A few intermediate
+      algebra lines on pages 4–5 were partly illegible in the original handwriting; in those spots I've filled
+      in the unambiguous, mathematically-consistent step rather than guessing — those lines are marked
+      <em>(reconstructed)</em>.
+    </div>
+  </header>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><a href="#s1">Partitions of unity</a></li>
+      <li><a href="#s2">Posing the flux problem in weak form</a></li>
+      <li><a href="#s3">First contact with graph calculus</a></li>
+      <li><a href="#s4">The graph divergence, as the adjoint of the graph gradient</a></li>
+      <li><a href="#s5">From graph gradient back to the continuum — assembling <span class="inline-code">D = M₁δ₀</span></a></li>
+      <li><a href="#s6">Posing a trainable nonlinearity</a></li>
+      <li><a href="#s7">Assembling the full system</a></li>
+      <li><a href="#s8">When is the system actually solvable?</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== SECTION 1 ===================== -->
+  <section class="block" id="s1">
+    <span class="section-num">§1 / page 1</span>
+    <h2>Partitions of unity</h2>
+
+    <div class="box def">
+      <span class="label">Definition — Partition of unity (PoU)</span>
+      <p>A collection of functions $\lambda_i(x): \mathbb{R}^d \to \mathbb{R}$ such that, for all $x$,</p>
+      <div class="eq-block">$$\lambda_i \ge 0, \qquad \sum_i \lambda_i = 1.$$</div>
+    </div>
+
+    <div class="box thm">
+      <span class="label">Theorem</span>
+      <p>Partitions of unity are closed under convex combination. (A.k.a. a convex combination of PoUs is a PoU.)</p>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Proof</span>
+      <p>Let $W \in \mathbb{R}^{N\times M}$ with</p>
+      <div class="eq-block">$$W_{ij} \ge 0, \qquad \sum_i W_{ij} = 1,$$</div>
+      <p>and define a new family</p>
+      <div class="eq-block">$$\psi_i^0(x) = \sum_j W_{ij}\,\lambda_j(x).$$</div>
+      <p><em>Is $\{\psi_i^0\}$ a PoU?</em> Clearly $\psi_i^0 \ge 0$, since it's a nonnegative combination of nonnegative $\lambda_j$'s. For the sum:</p>
+      <div class="eq-block">
+      $$\sum_i \psi_i^0 \;=\; \sum_{i,j} W_{ij}\lambda_j \;=\; \sum_j \Big(\sum_i W_{ij}\Big)\lambda_j \;=\; \sum_j \lambda_j \;=\; 1. \qquad \blacksquare$$
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 2 ===================== -->
+  <section class="block" id="s2">
+    <span class="section-num">§2 / page 2</span>
+    <h2>Posing the flux problem in weak form</h2>
+
+    <div class="box note">
+      <span class="label">Recall</span>
+      <div class="eq-block">$$\psi'_{ij} = \psi_i^0\,\frac{d}{dx}\psi_j^0 \;-\; \psi_j^0\,\frac{d}{dx}\psi_i^0$$</div>
+      <p>and</p>
+      <div class="eq-block">$$\frac{d}{dx}\,W^0 \subseteq W^1.$$</div>
+    </div>
+
+    <p>We search for a flux $F$ and potential $u$ satisfying</p>
+    <div class="eq-block">
+      $$F = -\nabla u + N[u], \qquad \nabla\cdot F = f,$$
+    </div>
+    <p>or, in weak form:</p>
+    <div class="eq-block">
+      $$(F,v) + (\nabla u, v) - (N[u], v) = 0,$$
+      $$-(F,\nabla z) = (f, z),$$
+    </div>
+    <p>for every $v \in W^1$, $z \in W^0$.</p>
+
+    <div class="box thm">
+      <span class="label">Notation</span>
+      <p>Denote this system $\,R(u,F) = 0.$</p>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 3 ===================== -->
+  <section class="block" id="s3">
+    <span class="section-num">§3 / page 3</span>
+    <h2>First contact with graph calculus</h2>
+
+    <div class="box def">
+      <span class="label">Definition — $k$-clique</span>
+      <p>An ordered $k$-tuple of nodes, anti-symmetric with respect to swap:</p>
+      <div class="eq-block">$$w \in C_k \;\longrightarrow\; w = (n_i, n_j, \dots)$$</div>
+    </div>
+
+    <div class="arrow-pair">
+      <div class="stack">
+        <span>$C_0$</span>
+      </div>
+      <div class="stack">
+        <span class="arrow-label">$\partial$</span>
+        <span>$\longleftarrow$</span>
+      </div>
+      <div class="stack">
+        <span>$C_1$</span>
+      </div>
+    </div>
+
+    <h3>Example</h3>
+    <div class="eq-block">
+      $$e_{ij} = (n_i, n_j) \in C_1, \qquad (n_j, n_i) = -(n_i,n_j) \in C_1$$
+      $$\partial(n_i, n_j) = n_j - n_i$$
+    </div>
+
+    <div class="box def">
+      <span class="label">Definition — Graph functions</span>
+      <p>Node functions $f_i$, and edge functions $g_{ij} = -g_{ji}$.</p>
+    </div>
+
+    <div class="box def">
+      <span class="label">Definition — Graph gradient</span>
+      <p>Acting on node-valued (graph) functions:</p>
+      <div class="eq-block">$$\delta_0 f_{ij} = f_j - f_i$$</div>
+      <p>Written as a matrix:</p>
+      <div class="eq-block">$$(\delta_0)_{e_{ij},\,ab} = \delta_{jb} - \delta_{ia}$$</div>
+      <p style="font-size:0.88rem; color:var(--ink-soft);">($\delta_{jb}$ here is the Kronecker delta — the row of $\delta_0$ for edge $e_{ij}$ has a $+1$ in column $j$ and a $-1$ in column $i$, zero elsewhere.)</p>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 4 ===================== -->
+  <section class="block" id="s4">
+    <span class="section-num">§4 / page 4</span>
+    <h2>The graph divergence, as the adjoint of the graph gradient</h2>
+
+    <div class="arrow-pair">
+      <div class="stack"><span>$N$</span></div>
+      <div class="stack">
+        <span class="arrow-label">$\delta_0$</span>
+        <span>$\longrightarrow$</span>
+        <span>$\longleftarrow$</span>
+        <span class="arrow-label">$\delta_0^{\,*}$</span>
+      </div>
+      <div class="stack"><span>$E$</span></div>
+    </div>
+
+    <div class="box def">
+      <span class="label">Definition — Graph divergence, as adjoint</span>
+      <p>For all $f, g$:</p>
+      <div class="eq-block">$$(f,\ \delta_0^{\,*} g) = (\delta_0 f,\ g)$$</div>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Derivation</span>
+      <div class="eq-block">
+        $$(\delta_0 f, g) = \frac{1}{2}\sum_{i,j} (f_j - f_i)\, g_{ij}$$
+        $$= \frac{1}{2}\sum_{i,j} f_j\, g_{ij} \;-\; \frac{1}{2}\sum_{i,j} f_i\, g_{ij}$$
+        $$= \frac{1}{2}\sum_{i,j} f_i\, g_{ji} \;-\; \frac{1}{2}\sum_{i,j} f_i\, g_{ij} \qquad \textit{(reconstructed: relabel } i\leftrightarrow j \textit{ in the first sum)}$$
+        $$= -\frac{1}{2}\sum_{i,j} f_i\, g_{ij} \;-\; \frac{1}{2}\sum_{i,j} f_i\, g_{ij} \qquad (\text{using } g_{ji} = -g_{ij})$$
+        $$= \sum_i \Big(\sum_j -g_{ij}\Big) f_i$$
+        $$= (\delta_0^{\,*}g,\ f)$$
+      </div>
+      <p>So the graph divergence at node $i$ is the (negative) net outgoing flow over its incident edges:</p>
+      <div class="eq-block">$$(\delta_0^{\,*} g)_i = -\sum_j g_{ij}.$$</div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 5 ===================== -->
+  <section class="block" id="s5">
+    <span class="section-num">§5 / page 5</span>
+    <h2>From graph gradient back to the continuum</h2>
+
+    <div class="box def">
+      <span class="label">Definition — Graph gradient (restated)</span>
+      <div class="eq-block">$$\delta_0 f_{ij} = f_j - f_i$$</div>
+    </div>
+
+    <div class="box note">
+      <span class="label">Etymology</span>
+      <p>Compare to the continuum line integral of a gradient along the edge $e_{ij}$:</p>
+      <div class="eq-block">$$\int_{e_{ij}} \nabla \phi \cdot d\ell = \phi_j - \phi_i.$$</div>
+      <p>The graph gradient is exactly the discrete shadow of this identity.</p>
+    </div>
+
+    <p style="font-size:0.92rem;color:var(--ink-soft);">
+      <strong>Note.</strong> $\delta_0^{\top} u = \sum_{j \sim i} u_{ij}$ — summing the edge values over all edges incident to node $i$.
+    </p>
+
+    <p>As a matrix (as before):</p>
+    <div class="eq-block">$$(\delta_0)_{e_{ij},\,ab} = \delta_{jb} - \delta_{ia}$$</div>
+
+    <h3>The discrete bilinear form</h3>
+    <p>In bilinear form, we need to compute the inner product of the derivatives of the basis functions:</p>
+    <div class="eq-block">
+      $$(u', v) \;=\; \hat v^{\top}\underbrace{\big(\psi^{0\prime},\,\psi^0\big)}_{\displaystyle D_{ij}}\,\hat u$$
+    </div>
+    <p>Define the mass matrices $M_0$ (on nodes) and $M_1$ (on edges).</p>
+
+    <div class="box thm">
+      <span class="label">Theorem</span>
+      <div class="eq-block">$$D_{ij} = M_1\,\delta_0$$</div>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Proof (as written; lightly cleaned up)</span>
+      <div class="eq-block">
+        $$\frac{d}{dx}u = \sum_i \hat u_i\, \frac{d}{dx}\psi_i^0$$
+        $$= \sum_i \hat u_i \Big(\sum_j \psi_j^0\,\tfrac{d}{dx}\psi_i^0 - \psi_i^0\,\tfrac{d}{dx}\psi_j^0\Big)$$
+        $$= \sum_{i,j}\hat u_i\,\big(-\psi'_{ij}\big) \;=\; \sum_{i,j} (\hat u_i - \hat u_j)\dots\ \text{grouped into edge form } \psi'_{ij}$$
+      </div>
+      <p>Pairing against the test function $v$:</p>
+      <div class="eq-block">
+        $$(v,\ \tfrac{d}{dx}u) \;=\; \hat v^{\top}\Big(\psi^1,\ \textstyle\sum_j \psi'_{ij}\Big)\,\hat u \;=\; \hat v^{\top} M_1\,\delta_0\,\hat u.$$
+      </div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);">
+        (This step leans on the same product-rule identity recalled in §2 — $\psi'_{ij}$ is built from $\psi^0_i, \psi^0_j$ exactly so that differentiating the $W^0$ basis produces something expressible in the $W^1$ edge basis, i.e. $\tfrac{d}{dx}W^0 \subseteq W^1$.)
+      </p>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 6 ===================== -->
+  <section class="block" id="s6">
+    <span class="section-num">§6 / page 6</span>
+    <h2>Posing a trainable nonlinearity</h2>
+
+    <p>The question: how do we pose a <em>trainable</em> nonlinear term $N[u]$ so that $(N[u], v)$ stays well-defined?</p>
+
+    <div class="box remark">
+      <span class="label">The naive approach fails</span>
+      <p>
+        If $N[u]$ were defined directly as the raw output of a neural network —
+        $u \to \boxed{\text{DNN}} \to N[u]$ — then we would not be able to integrate it
+        <em>exactly</em>. That breaks the whole theory built up so far (the exact integration
+        identities are what made the discrete divergence conservative).
+      </p>
+    </div>
+
+    <div class="box thm">
+      <span class="label">Instead</span>
+      <p>Project the network's output onto the same edge (Whitney-1) basis used everywhere else:</p>
+      <div class="eq-block">$$N[u] = \sum_{i,j} N[u]_{ij}\,\psi^1_{ij}$$</div>
+      <p>so that the inner product with any test function reduces to a clean matrix expression:</p>
+      <div class="eq-block">$$(N[u], v) = \hat v^{\top} M_1\, \widehat{N[u]}$$</div>
+    </div>
+
+    <p style="font-size:0.92rem;color:var(--ink-soft);">
+      The nonlinearity can be <em>any</em> trainable function of $\hat u$ — it just has to be re-expanded
+      in the basis before it's paired against test functions, so the same exact mass-matrix machinery
+      ($M_1$) applies to it as to every other term.
+    </p>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 7 ===================== -->
+  <section class="block" id="s7">
+    <span class="section-num">§7 / page 7</span>
+    <h2>Assembling the full system</h2>
+
+    <p>Putting the flux and balance equations together gives the block system:</p>
+    <div class="matrix-wrap">
+      <div class="eq-block">
+        $$
+        \begin{pmatrix} M_1 & M_1\,\delta \\[2pt] -\delta^{\top}M_1 & 0 \end{pmatrix}
+        \begin{pmatrix} \hat F \\ \hat u \end{pmatrix}
+        +
+        \begin{pmatrix} M_N(\hat u) \\ 0 \end{pmatrix}
+        =
+        \begin{pmatrix} 0 \\ f \end{pmatrix}
+        $$
+      </div>
+    </div>
+
+    <h3>Back-substitution</h3>
+    <p>Eliminating $\hat F$ from the top block row and substituting into the bottom row:</p>
+    <div class="box thm">
+      <span class="label">Result</span>
+      <div class="eq-block">$$-\delta^{\top}M_1\,\delta\,\hat u \;+\; \delta^{\top} M_1\, N(\hat u) \;=\; \text{RHS}$$</div>
+    </div>
+
+    <div class="box remark">
+      <span class="label">Remark</span>
+      <p>Discrete divergence $\;\Rightarrow\;$ conservation.</p>
+    </div>
+
+    <h3>Extracting the mass matrices</h3>
+    <p>Let $\hat M_0 = (\phi_i, \phi_j)$ be the Gram matrix of the <em>raw</em> basis $\{\phi_i\}$, and recall the PoU basis is a convex combination of it: $\psi_i^0 = \sum_j W_{ij}\phi_j$. Then:</p>
+    <div class="eq-block">
+      $$M_0 = (W\phi,\,W\phi) = W^{\top}(\phi,\phi)\,W = W^{\top}\hat M_0\, W$$
+    </div>
+    <p>and, by a similar (tensorized) formula for the edge mass matrix:</p>
+    <div class="eq-block">
+      $$M_1 = (W\otimes W)^{\top}\, \hat M_1\, (W\otimes W)$$
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 8 ===================== -->
+  <section class="block" id="s8">
+    <span class="section-num">§8 / page 8</span>
+    <h2>When is the system actually solvable?</h2>
+
+    <p>The data-fitting problem we ultimately want to solve is:</p>
+    <div class="eq-block">
+      $$\min \;\|u - u_{\text{data}}\|^2 \quad \text{s.t.} \quad R(u,F) = 0$$
+    </div>
+
+    <div class="box remark">
+      <span class="label">Only well-posed if...</span>
+      <p>...$R$ is itself solvable.</p>
+    </div>
+
+    <div class="box note">
+      <span class="label">Recall</span>
+      <p>For a system of the form $Ax + F(x) = b$, we needed</p>
+      <div class="eq-block">$$\|A^{-1}\| \le C$$</div>
+      <p>This is the condition covered in the previous lecture.</p>
+    </div>
+  </section>
+
+  <footer class="endnote">
+    Typeset from handwritten lecture notes, April 4–6. Equations rendered with KaTeX.
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+</body>
+</html>

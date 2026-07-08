@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Graph Calculus II — Flows, Coboundaries & the Graph Laplacian</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FAF6EF;
+    --panel: #FFFFFF;
+    --ink: #2B2622;
+    --ink-soft: #5B534B;
+    --rule: #E4DCCC;
+    --navy: #2C4A5E;
+    --navy-bg: #EFF4F6;
+    --terracotta: #B5602F;
+    --terracotta-bg: #FCF1E9;
+    --olive: #5C6B3F;
+    --olive-bg: #F2F4EA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Source Serif 4", Georgia, serif;
+    font-size:17px;
+    line-height:1.6;
+    padding:0 0 6rem 0;
+  }
+  .wrap{ max-width:780px; margin:0 auto; padding:3.2rem 1.5rem 0; }
+  header.doc-head{ border-bottom:2px solid var(--ink); padding-bottom:1.4rem; margin-bottom:2.6rem; }
+  .eyebrow{
+    font-family:"JetBrains Mono", monospace; font-size:0.74rem; letter-spacing:0.12em;
+    color:var(--terracotta); text-transform:uppercase; font-weight:600;
+  }
+  h1.title{ font-size:1.9rem; margin:0.45rem 0 0.3rem; font-weight:700; letter-spacing:-0.01em; }
+  .subtitle{ color:var(--ink-soft); font-size:1rem; font-style:italic; }
+  .transcriber-note{
+    background:var(--navy-bg); border-left:3px solid var(--navy); padding:0.9rem 1.1rem;
+    font-size:0.92rem; color:var(--ink-soft); margin-top:1.3rem; border-radius:2px;
+  }
+  .transcriber-note b{ color:var(--navy); }
+
+  nav.toc{
+    background:var(--panel); border:1px solid var(--rule); border-radius:6px;
+    padding:1.1rem 1.4rem; margin-bottom:3rem; font-size:0.93rem;
+  }
+  nav.toc .eyebrow{ margin-bottom:0.5rem; display:block; }
+  nav.toc ol{ margin:0; padding-left:1.3rem; columns:1; }
+  nav.toc li{ margin:0.18rem 0; }
+  nav.toc a{ color:var(--ink); text-decoration:none; border-bottom:1px dotted var(--rule); }
+  nav.toc a:hover{ color:var(--terracotta); border-color:var(--terracotta); }
+
+  section.block{ margin-bottom:3.4rem; }
+  .section-num{
+    font-family:"JetBrains Mono", monospace; color:var(--terracotta);
+    font-size:0.8rem; font-weight:600; letter-spacing:0.06em;
+  }
+  h2{ font-size:1.38rem; margin:0.2rem 0 1.1rem; border-bottom:1px solid var(--rule); padding-bottom:0.6rem; }
+  h3{ font-size:1.05rem; margin:1.6rem 0 0.6rem; color:var(--navy); }
+  p{ margin:0.85rem 0; }
+
+  .box{ border-radius:6px; padding:1.1rem 1.3rem; margin:1.1rem 0; border-left:4px solid; }
+  .box .label{
+    font-family:"JetBrains Mono", monospace; font-size:0.74rem; letter-spacing:0.1em;
+    text-transform:uppercase; font-weight:700; display:block; margin-bottom:0.55rem;
+  }
+  .box.def{ background:var(--navy-bg); border-color:var(--navy); }
+  .box.def .label{ color:var(--navy); }
+  .box.thm{ background:var(--terracotta-bg); border-color:var(--terracotta); }
+  .box.thm .label{ color:var(--terracotta); }
+  .box.pf{ background:var(--panel); border-color:var(--rule); border-left-color:#B7AE9C; }
+  .box.pf .label{ color:var(--ink-soft); }
+  .box.remark{ background:var(--olive-bg); border-color:var(--olive); }
+  .box.remark .label{ color:var(--olive); }
+  .box.note{ background:#F6F2E9; border-color:#C9A86A; }
+  .box.note .label{ color:#9C7A33; }
+
+  .eq{ overflow-x:auto; padding:0.4rem 0; }
+  .eq-block{ text-align:center; margin:0.9rem 0; overflow-x:auto; }
+
+  .arrow-pair{
+    display:flex; align-items:center; gap:1.2rem; justify-content:center;
+    margin:1.3rem 0; font-size:1.1rem; flex-wrap:wrap;
+  }
+  .arrow-pair .stack{ display:flex; flex-direction:column; align-items:center; gap:0.15rem; }
+  .arrow-pair .arrow-label{ font-size:0.74rem; color:var(--ink-soft); font-family:"JetBrains Mono",monospace; }
+  .arrow-pair .double{ display:flex; flex-direction:column; align-items:center; line-height:1; }
+
+  .diagram-cap{ text-align:center; font-size:0.85rem; color:var(--ink-soft); margin-top:0.3rem; }
+  .svg-wrap{ display:flex; justify-content:center; margin:1.2rem 0; }
+
+  .step-list{ list-style:none; padding:0; margin:0; }
+  .step-list > li{
+    display:flex; gap:0.8rem; align-items:flex-start; margin:1.1rem 0;
+  }
+  .step-num{
+    flex:0 0 auto; width:1.7rem; height:1.7rem; border-radius:50%;
+    background:var(--terracotta); color:#fff; font-family:"JetBrains Mono",monospace;
+    font-size:0.85rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+    margin-top:0.15rem;
+  }
+  .step-body{ flex:1; }
+
+  hr.div{ border:none; border-top:1px solid var(--rule); margin:2.6rem 0; }
+  code, .inline-code{
+    font-family:"JetBrains Mono", monospace; font-size:0.88em; background:#F1ECE0;
+    padding:0.1em 0.35em; border-radius:3px;
+  }
+  footer.endnote{
+    margin-top:4rem; padding-top:1.4rem; border-top:2px solid var(--ink);
+    font-size:0.88rem; color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <span class="eyebrow">Lecture Notes · Continuation</span>
+    <h1 class="title">Graph Calculus II</h1>
+    <div class="subtitle">Flows on graphs — higher-order operators, coboundaries, and the graph Laplacian</div>
+    <div class="transcriber-note">
+      <b>Transcription note.</b> Typeset from handwritten notes. Definitions, theorems, and final results
+      are transcribed faithfully. The two longer derivations (the $\partial\circ\partial=0$ and
+      $\delta^*\!\circ\delta^*=0$ proofs) are presented with the same step labels and structure as the
+      original, lightly cleaned up for legibility.
+    </div>
+  </header>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><a href="#s1">Recap & today's plan</a></li>
+      <li><a href="#s2">Formalizing: $k$-chains and the boundary operator</a></li>
+      <li><a href="#s3">Geometry → algebra, and the exact sequence property</a></li>
+      <li><a href="#s4">A worked example: the triangle, and the coboundary</a></li>
+      <li><a href="#s5">Coboundary examples: grad, curl, and $\mathrm{curl}\circ\mathrm{grad}=0$</a></li>
+      <li><a href="#s6">Codifferentials and the recall table</a></li>
+      <li><a href="#s7">$\delta^*\!\circ\delta^*=0$ and the graph Laplacian</a></li>
+      <li><a href="#s8">Application: Hodge decomposition on a graph</a></li>
+      <li><a href="#s9">From Laplacian to variational problem</a></li>
+      <li><a href="#s10">Rayleigh quotients and eigenanalysis</a></li>
+      <li><a href="#s11">Spectral graph theory: bounding $\lambda_1$</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== SECTION 1 ===================== -->
+  <section class="block" id="s1">
+    <span class="section-num">page 1 (top)</span>
+    <h2>Recap & today's plan</h2>
+    <div class="box note">
+      <span class="label">Last time</span>
+      <p>Introduced graph div / grad.</p>
+    </div>
+    <div class="box note">
+      <span class="label">Today</span>
+      <p>Flows on graphs —</p>
+      <ul>
+        <li>higher-order operators</li>
+        <li>graph Laplacians</li>
+      </ul>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 2 ===================== -->
+  <section class="block" id="s2">
+    <span class="section-num">page 1 (bottom)</span>
+    <h2>Formalizing: $k$-chains and the boundary operator</h2>
+
+    <div class="box def">
+      <span class="label">Definition — $K$-chain</span>
+      <div class="eq-block">$$C^K = [v_1,\dots,v_K]_{v_i \in V}$$</div>
+      <p>anti-symmetric with respect to swapping any two entries, i.e.</p>
+      <div class="eq-block">$$[v_1,v_2] = -[v_2,v_1]$$</div>
+    </div>
+
+    <div class="box def">
+      <span class="label">Definition — Boundary</span>
+      <div class="eq-block">$$\partial_k:\ C^{k+1} \to C^k$$</div>
+      <div class="eq-block">
+        $$\partial_k[v_1,\dots,v_{k+1}] = \sum_{i=1}^{k+1}(-1)^{i-1}\,[n_1,\dots,\widehat{n_i},\dots,n_{k+1}]$$
+      </div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);">($\widehat{n_i}$ means: leave this vertex out.)</p>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Example</span>
+      <div class="eq-block">
+        $$\partial[v_1,v_2] = (-1)^0[v_2] + (-1)^1[v_1] = v_2 - v_1$$
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 3 ===================== -->
+  <section class="block" id="s3">
+    <span class="section-num">page 2</span>
+    <h2>Geometry → algebra, and the exact sequence property</h2>
+
+    <p>We can use the boundary operator to turn geometry into algebra. Take a path of two edges:</p>
+
+    <div class="svg-wrap">
+      <svg width="220" height="100" viewBox="0 0 220 100">
+        <circle cx="20" cy="80" r="4" fill="#2B2622"/>
+        <text x="10" y="98" font-size="13" fill="#2B2622">v₁</text>
+        <line x1="24" y1="76" x2="100" y2="30" stroke="#2C4A5E" stroke-width="1.6" marker-end="url(#arrow1)"/>
+        <circle cx="105" cy="26" r="4" fill="#2B2622"/>
+        <text x="108" y="18" font-size="13" fill="#2B2622">v₂</text>
+        <line x1="110" y1="28" x2="195" y2="55" stroke="#2C4A5E" stroke-width="1.6" marker-end="url(#arrow1)"/>
+        <circle cx="200" cy="58" r="4" fill="#2B2622"/>
+        <text x="195" y="76" font-size="13" fill="#2B2622">v₃</text>
+        <defs>
+          <marker id="arrow1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#2C4A5E"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="eq-block">
+      $$S = [v_1,v_2] + [v_2,v_3]$$
+      $$\partial S = (v_2-v_1) + (v_3-v_2) = v_3-v_1$$
+    </div>
+
+    <div class="box thm">
+      <span class="label">Theorem — Exact sequence property</span>
+      <div class="eq-block">$$\partial_{k-1}\circ\partial_k = 0$$</div>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Proof</span>
+      <p>Let $c \in C^{k+1}$:</p>
+      <div class="eq-block">
+        $$\partial_{k-1}\partial_k c \;=\; \sum_{i=1}^{k+1} (-1)^{i-1}\,\partial_{k-1}\big[n_1,\dots,\widehat{n_i},\dots,n_{k+1}\big]$$
+        $$=\ \sum_{i,j}(-1)^{i}(-1)^{j-1}\big[n_1,\dots,\widehat{n_i},\dots,\widehat{n_j},\dots,n_{k+1}\big]$$
+      </div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);text-align:center;">↑ this bracket term is <strong>antisymmetric</strong> under swapping $i \leftrightarrow j$</p>
+      <div class="eq-block">
+        $$=\ \sum_{i,j} (-1)^{i+j-2}\,\alpha_{ij}$$
+      </div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);text-align:center;">↑ the sign prefactor is <strong>symmetric</strong> in $i,j$; multiplying a symmetric weight against an antisymmetric quantity and summing over all $(i,j)$ kills the sum</p>
+      <div class="eq-block">$$=\ 0 \qquad \blacksquare$$</div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 4 ===================== -->
+  <section class="block" id="s4">
+    <span class="section-num">page 3</span>
+    <h2>A worked example: the triangle, and the coboundary</h2>
+
+    <div class="svg-wrap">
+      <svg width="280" height="220" viewBox="0 0 280 220">
+        <!-- nodes: i top, j bottom-right, k bottom-left -->
+        <circle cx="140" cy="30" r="16" fill="none" stroke="#2B2622" stroke-width="1.4"/>
+        <text x="140" y="35" font-size="13" text-anchor="middle" fill="#2B2622">i</text>
+
+        <circle cx="230" cy="150" r="16" fill="none" stroke="#2B2622" stroke-width="1.4"/>
+        <text x="230" y="155" font-size="13" text-anchor="middle" fill="#2B2622">j</text>
+
+        <circle cx="50" cy="150" r="16" fill="none" stroke="#2B2622" stroke-width="1.4"/>
+        <text x="50" y="155" font-size="13" text-anchor="middle" fill="#2B2622">k</text>
+
+        <!-- edges with arrows: i->j (e_ij), j->k (e_jk), k->i (e_ki) -->
+        <line x1="152" y1="40" x2="218" y2="140" stroke="#B5602F" stroke-width="1.6" marker-end="url(#arrow2)"/>
+        <text x="200" y="80" font-size="12" fill="#B5602F">e_ij</text>
+
+        <line x1="214" y1="155" x2="66" y2="155" stroke="#B5602F" stroke-width="1.6" marker-end="url(#arrow2)"/>
+        <text x="135" y="172" font-size="12" fill="#B5602F">e_jk</text>
+
+        <line x1="62" y1="138" x2="128" y2="42" stroke="#B5602F" stroke-width="1.6" marker-end="url(#arrow2)"/>
+        <text x="60" y="90" font-size="12" fill="#B5602F">e_ki</text>
+
+        <path d="M 140 90 A 35 35 0 1 1 130 100" fill="none" stroke="#5B534B" stroke-width="1.2" marker-end="url(#arrow3)"/>
+        <text x="148" y="105" font-size="12" fill="#5B534B">C_ijk</text>
+
+        <defs>
+          <marker id="arrow2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#B5602F"/>
+          </marker>
+          <marker id="arrow3" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 Z" fill="#5B534B"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <p class="diagram-cap">The 2-chain $C_{ijk}$ and its boundary edges, oriented $i\to j\to k\to i$.</p>
+
+    <div class="eq-block">
+      $$C_{ijk} = [v_i,v_j,v_k]$$
+      $$\partial C_{ijk} = e_{ij}+e_{jk}+e_{ki} = [v_i,v_j]+[v_j,v_k]+[v_k,v_i]$$
+      $$\partial\partial C_{ijk} = (v_j-v_i)+(v_k-v_j)+(v_i-v_k) = 0$$
+    </div>
+
+    <div class="box note">
+      <span class="label">To define coboundary (graph div/grad/curl)</span>
+      <p>Swap the roles of chains and cochains. For $f \in C_k$:</p>
+      <div class="eq-block">$$\delta_k:\ C_k \to C_{k+1}$$</div>
+      <div class="eq-block">
+        $$\delta_k f \;=\; \sum_i (-1)^i\, f(v_1,\dots,\widehat{v_i},\dots,v_k)$$
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 5 ===================== -->
+  <section class="block" id="s5">
+    <span class="section-num">page 4 (top)</span>
+    <h2>Coboundary examples: grad, curl, and $\mathrm{curl}\circ\mathrm{grad}=0$</h2>
+
+    <div class="box def">
+      <span class="label">Example — grad</span>
+      <div class="eq-block">$$\delta_0\,\phi_{ij} = \phi_j - \phi_i$$</div>
+    </div>
+
+    <div class="box def">
+      <span class="label">Example — curl</span>
+      <div class="eq-block">$$\delta_1\, A_{ijk} = A_{ij} + A_{jk} + A_{ki}$$</div>
+    </div>
+
+    <div class="box thm">
+      <span class="label">$\mathrm{curl}\circ\mathrm{grad} = 0$</span>
+      <div class="eq-block">
+        $$\delta_1\delta_0\,\phi \;=\; \delta_0\phi_{ij} + \delta_0\phi_{jk} + \delta_0\phi_{ki}$$
+        $$=\ (\phi_j-\phi_i) + (\phi_k-\phi_j) + (\phi_i-\phi_k)$$
+        $$=\ 0$$
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 6 ===================== -->
+  <section class="block" id="s6">
+    <span class="section-num">page 4 (bottom)</span>
+    <h2>Codifferentials and the recall table</h2>
+
+    <div class="box def">
+      <span class="label">Definition — Codifferential</span>
+      <p>Defined as the adjoint, in the $\ell_2$ inner product:</p>
+      <div class="eq-block">$$(\delta^* f,\, g) = (f,\, \delta g)$$</div>
+    </div>
+
+    <div class="box note">
+      <span class="label">Recall</span>
+      <p>
+        $\delta_0 = \mathrm{grad}$, &nbsp; $\delta_0^* = \mathrm{div}$ &nbsp;&nbsp;|&nbsp;&nbsp;
+        $\delta_1 = \mathrm{curl}$, &nbsp; $\delta_1^* = \mathrm{curl}$
+      </p>
+      <div class="arrow-pair">
+        <div class="stack"><span>$C_0$</span></div>
+        <div class="stack">
+          <span class="arrow-label">$\delta_0$</span>
+          <span>$\rightleftarrows$</span>
+          <span class="arrow-label">$\delta_0^*$</span>
+        </div>
+        <div class="stack"><span>$C_1$</span></div>
+        <div class="stack">
+          <span class="arrow-label">$\delta_1$</span>
+          <span>$\rightleftarrows$</span>
+          <span class="arrow-label">$\delta_1^*$</span>
+        </div>
+        <div class="stack"><span>$C_2$</span></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 7 ===================== -->
+  <section class="block" id="s7">
+    <span class="section-num">page 5</span>
+    <h2>$\delta^*\!\circ\delta^*=0$ and the graph Laplacian</h2>
+
+    <div class="box thm">
+      <span class="label">Theorem</span>
+      <div class="eq-block">$$\delta^*\circ\delta^* = 0$$</div>
+    </div>
+
+    <div class="box pf">
+      <span class="label">Proof — for $f\in C^{k-2},\ g\in C^k$</span>
+      <div class="eq-block">
+        $$\langle f,\ \delta_k^*\,\delta_{k+1}^*\,g\rangle = \langle \delta_k f,\ \delta_{k+1}^* g\rangle$$
+        $$=\ \langle \delta_{k+1}\delta_k f,\ g\rangle$$
+        $$=\ 0$$
+      </div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);">
+        Each line just applies the adjoint definition from §6 once; the last line vanishes by the
+        $\delta\circ\delta=0$ identity (the coboundary counterpart of $\partial\circ\partial=0$ — see the
+        $\mathrm{curl}\circ\mathrm{grad}=0$ example above).
+      </p>
+    </div>
+
+    <p>We now have a complete graph analog to div / grad / curl. Just as in vector calculus, we can use them to solve Laplacian problems:</p>
+
+    <div class="box def">
+      <span class="label">Definition — Graph (Hodge) Laplacian</span>
+      <div class="eq-block">$$\Delta_k = \delta_{k-1}\,\delta_{k-1}^* \;+\; \delta_k^*\,\delta_k$$</div>
+      <div class="arrow-pair">
+        <div class="stack"><span>$C^{k-1}$</span></div>
+        <div class="stack">
+          <span class="arrow-label">$\delta_{k-1}$</span>
+          <span>$\rightleftarrows$</span>
+          <span class="arrow-label">$\delta_{k-1}^*$</span>
+        </div>
+        <div class="stack"><span>$C^k$</span></div>
+        <div class="stack">
+          <span class="arrow-label">$\delta_k$</span>
+          <span>$\rightleftarrows$</span>
+          <span class="arrow-label">$\delta_k^*$</span>
+        </div>
+        <div class="stack"><span>$C^{k+1}$</span></div>
+      </div>
+    </div>
+
+    <div class="box note">
+      <span class="label">Example</span>
+      <p>$k=0$:&nbsp; $\delta_0^*\delta_0 \;\longrightarrow\; \nabla\cdot\nabla$</p>
+      <p>$k=1$:&nbsp; $\delta_1^*\delta_1 + \delta_0\delta_0^* \;\longrightarrow\; -\nabla\times\nabla\times \;+\; \nabla\nabla\cdot$</p>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 8 ===================== -->
+  <section class="block" id="s8">
+    <span class="section-num">page 6</span>
+    <h2>Application: Hodge decomposition on a graph</h2>
+
+    <div class="box note">
+      <span class="label">In vector calculus</span>
+      <p>Any field can be split as $F = \nabla\times A + \nabla\phi$ (Hodge / Helmholtz decomposition). How do we find $A,\phi$?</p>
+      <div class="eq-block">
+        $$\nabla\cdot F = \nabla\cdot\nabla\times A + \nabla^2\phi$$
+        $$\nabla\times F = \nabla\times\nabla\times A + \nabla\times\nabla\phi$$
+      </div>
+      <p style="text-align:right;color:var(--ink-soft);font-size:0.88rem;">→ 2 PDEs to solve</p>
+    </div>
+
+    <div class="box thm">
+      <span class="label">On a graph</span>
+      <p>Let $f \in C_k$:</p>
+      <div class="eq-block">
+        $$f = \delta_{k-1}\phi + \delta_k^* A$$
+        $$\delta_k f = \delta_k\delta_{k-1}\phi + \delta_k\delta_k^* A$$
+        $$\delta_{k-1}^* f = \delta_{k-1}^*\delta_{k-1}\phi + \delta_{k-1}^*\delta_k^* A$$
+      </div>
+    </div>
+
+    <div class="box remark">
+      <span class="label">Pause → why is this useful?</span>
+      <ul>
+        <li>Graph encoders <span style="color:var(--ink-soft);">(Bronstein, GRAND)</span></li>
+        <li>DAG discovery <span style="color:var(--ink-soft);">(NOTEARS)</span></li>
+        <li>Recommender systems</li>
+        <li>Circuit models</li>
+      </ul>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 9 ===================== -->
+  <section class="block" id="s9">
+    <span class="section-num">page 7</span>
+    <h2>From Laplacian to variational problem</h2>
+
+    <p>We now have the machinery for analysis. Step ① — turn the problem into a variational (weak) one.</p>
+
+    <div class="box def">
+      <span class="label">Weighted graph Laplacian</span>
+      <div class="eq-block">$$L^w[u]_i = \sum_j W_{ij}(u_j - u_i) = f_i, \qquad f,u \in C_0,\ \ W_{ij}=W_{ji}$$</div>
+    </div>
+
+    <p>Let $v \in C_0$ be a test function. Testing the equation:</p>
+    <div class="eq-block">$$\langle v,\ L^w[u]\rangle = \langle v, f\rangle$$</div>
+    <div class="eq-block">
+      $$=\ \sum_{i,j} W_{ij}(u_j-u_i)\,v_i$$
+      $$=\ \tfrac{1}{2}\sum_{i,j} W_{ij}(u_j-u_i)v_i \;+\; \tfrac{1}{2}\sum_{i,j} W_{ij}(u_i-u_j)v_j$$
+      $$=\ \tfrac{1}{2}\sum_{i,j} W_{ij}(u_j-u_i)(v_j-v_i)$$
+    </div>
+    <p style="text-align:center;font-size:0.88rem;color:var(--ink-soft);">↑ weighted inner product on $C_1$</p>
+    <div class="box thm">
+      <span class="label">Bilinear form</span>
+      <div class="eq-block">$$a(u,v) := \tfrac{1}{2}(\delta v)^{\top} W (\delta v)$$</div>
+    </div>
+
+    <div class="box remark">
+      <span class="label">Lax–Milgram isn't just for fields — it applies here too!</span>
+      <p>① Coercivity:</p>
+      <div class="eq-block">$$\|u\|_E^2 = a(u,u) \ge \alpha\langle u,u\rangle = \alpha\|u\|^2$$</div>
+      <p>② Boundedness:</p>
+      <div class="eq-block">$$|a(u,v)| \le \gamma\|u\|\|v\|$$</div>
+      <p>To get $\alpha$ and $\gamma$, we need to understand the eigenvalues.</p>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 10 ===================== -->
+  <section class="block" id="s10">
+    <span class="section-num">page 8</span>
+    <h2>Rayleigh quotients and eigenanalysis</h2>
+
+    <p>Let $M = M^{\top}$ with orthogonal eigenpairs $(\lambda_i, v_i)$, $v_i^{\top}v_j = \delta_{ij}$. So:</p>
+    <div class="eq-block">
+      $$Mv_i = \lambda v_i \quad \text{(definition of eigenpair)}$$
+      $$v_i^{\top}Mv_i = \lambda v_i^{\top}v_i = \lambda$$
+    </div>
+
+    <div class="box def">
+      <span class="label">Definition — Rayleigh quotient</span>
+      <div class="eq-block">$$R(M,x) = \frac{x^{\top}Mx}{x^{\top}x}$$</div>
+      <p style="font-size:0.88rem;color:var(--ink-soft);">numerator = energy norm; denominator = the norm we want control over</p>
+    </div>
+
+    <p>Expanding $x$ in the eigenbasis, $x = \sum_i \hat g_i v_i$ where $\hat g_i = \langle v_i, x\rangle$:</p>
+    <div class="eq-block">
+      $$R(M,x) = \frac{\sum_i \lambda_i \hat g_i^2}{\sum_i \hat g_i^2}$$
+    </div>
+
+    <div class="box thm">
+      <span class="label">Min/max of $R$ gives min/max eigenvalues</span>
+      <div class="eq-block">
+        $$\min_x R(M,x) = \lambda_{\min} = \lambda_{\min}\frac{\sum\hat g_i^2}{\sum\hat g_i^2} \;\le\; \frac{\sum\lambda_i\hat g_i^2}{\sum\hat g_i^2} \;\le\; \lambda_{\max} = \max_x R(M,x)$$
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- ===================== SECTION 11 ===================== -->
+  <section class="block" id="s11">
+    <span class="section-num">pages 9–10</span>
+    <h2>Spectral graph theory: bounding $\lambda_1$</h2>
+    <p style="color:var(--ink-soft); font-style:italic;">Following Fan Chung, <em>Spectral Graph Theory</em>.</p>
+
+    <p>We estimate the smallest nonzero eigenvalue of the graph Laplacian:</p>
+    <div class="eq-block">
+      $$\lambda_1 = \min_{f \perp \mathbf{1}} \ \frac{\sum_{i,j}(f_i-f_j)^2}{\sum_k f_k^2}$$
+    </div>
+
+    <ol class="step-list">
+      <li>
+        <span class="step-num">1</span>
+        <div class="step-body">
+          The constant vector has zero eigenvalue: $v_0 = \mathbf{1}$, $\lambda_0 = 0$. By orthogonality,
+          $\langle v_0, f_{\min}\rangle = 0 \;\Rightarrow\; \sum_i f_{\min,i} = 0$.
+        </div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div class="step-body">
+          Pick $\hat v$ such that $|f(\hat v)| = \max_v |f(v)|$. Because $\sum_i f_i = 0$, we can find a
+          node $\hat u$ such that $f(\hat u)\,f(\hat v) < 0$ (opposite signs).
+        </div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div class="step-body">
+          Define $D = \max_{i,j\in V} d(v_i,v_j)$, the diameter of the graph. Let $P$ be a path connecting
+          $\hat u$ to $\hat v$ with $m \le D$ edges:
+          <div class="eq-block">$$f(\hat v) - f(\hat u) = \sum_{k} f(v_{k+1}) - f(v_k)$$</div>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div class="step-body">
+          By Cauchy–Schwarz:
+          <div class="eq-block">
+            $$\big(f(\hat v)-f(\hat u)\big)^2 \;\le\; m\sum_P \big(f(v_{k+1})-f(v_k)\big)^2 \;\le\; D\sum_{i,j}(f_j-f_i)^2$$
+          </div>
+          <p style="font-size:0.85rem;color:var(--ink-soft);">↑ this right-hand side is exactly the numerator of the Rayleigh quotient.</p>
+        </div>
+      </li>
+      <li>
+        <span class="step-num">5</span>
+        <div class="step-body">
+          Since $f(\hat u)$ and $f(\hat v)$ have opposite signs and $|f(\hat v)| = \max|f(v)|$:
+          <div class="eq-block">
+            $$\big(f(\hat v)-f(\hat u)\big)^2 \ge f(\hat v)^2 \;\;\Rightarrow\;\; f(\hat v)^2 \le D\sum_{i,j}(f_j-f_i)^2$$
+          </div>
+          For the denominator, since $\hat v$ is the maximizer:
+          <div class="eq-block">$$\sum_{k=1}^N f_k^2 \le N f(\hat v)^2$$</div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="box thm">
+      <span class="label">Combining steps 4 + 5</span>
+      <div class="eq-block">
+        $$\lambda_1 = \frac{\sum_{i,j}(f_i-f_j)^2}{\sum_i f_i^2} \;\ge\; \frac{f(\hat v)^2 / D}{N f(\hat v)^2} \;=\; \frac{1}{ND}$$
+      </div>
+      <p>So the coercivity constant $\alpha$ in Lax–Milgram is $\dfrac{1}{ND}$.</p>
+    </div>
+  </section>
+
+  <footer class="endnote">
+    Typeset from handwritten lecture notes. Equations rendered with KaTeX.
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+</body>
+</html>
